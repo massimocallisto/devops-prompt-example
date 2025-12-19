@@ -1,0 +1,36 @@
+name: Build and Send Package
+
+on:
+  push:
+    branches:
+      - feature/prompt
+
+jobs:
+  build-and-send:
+    runs-on: ubuntu-latest
+    outputs:
+      safe_branch: ${{ steps.branch_name.outputs.safe_branch }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get safe branch name
+        id: branch_name
+        run: |
+          BRANCH_NAME="${GITHUB_REF##*/}"
+          SAFE_BRANCH_NAME="${BRANCH_NAME//\//_}"
+          echo "safe_branch=$SAFE_BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build package
+        env:
+          SAFE_BRANCH_NAME: ${{ steps.branch_name.outputs.safe_branch }}
+        run: |
+          mkdir -p docs-output/
+          echo "Contenuto della build per branch $SAFE_BRANCH_NAME" > docs-output/info.txt
+          zip -r docs-output/package_$SAFE_BRANCH_NAME.zip profiles/ docs/
+
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-artifact
+          path: docs-output/
